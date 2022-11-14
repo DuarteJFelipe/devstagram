@@ -12,13 +12,16 @@ class PostController extends Controller
     public function __construct()
     {
         //revisa y proteje que el usuario este autenticado
-        $this->middleware('auth');
+        $this->middleware('auth')->except(['show','index']);
     }
 
     public function index(User $user)
     {
+        $posts = Post::where('user_id', $user->id)->paginate(20);
+
         return view('dashboard',[
-            'user' => $user
+            'user' => $user,
+            'posts' => $posts
         ]);
     }
 
@@ -27,7 +30,6 @@ class PostController extends Controller
         return view('posts.create');
     }
 
-    
     public function store(Request $request)
     {
         $this->validate($request, [
@@ -36,12 +38,12 @@ class PostController extends Controller
             'imagen' => 'required'
         ]);
 
-        Post::create([
-            'titulo' => $request->titulo,
-            'descripcion' => $request->descripcion,
-            'imagen' => $request->imagen,
-            'user_id' => auth()->user()->id,
-        ]);
+        // Post::create([
+        //     'titulo' => $request->titulo,
+        //     'descripcion' => $request->descripcion,
+        //     'imagen' => $request->imagen,
+        //     'user_id' => auth()->user()->id,
+        // ]);
 
         //otra forma de crear registros
         // $post = new Post;
@@ -51,6 +53,25 @@ class PostController extends Controller
         // $post->user_id = auth()->user()->id;
         // $post->save();
 
+        //otra forma      ponemos la relacion
+        $request->user()->posts()->create([
+            'titulo' => $request->titulo,
+            'descripcion' => $request->descripcion,
+            'imagen' => $request->imagen,
+            'user_id' => auth()->user()->id,
+        ]);
+
         return redirect()->route('posts.index', auth()->user()->username);
+    }
+
+    //                   importamos modelos
+    public function show(User $user,Post $post)
+    {
+
+
+        return view('posts.show',[
+            'user' => $user,
+            'post' => $post
+        ]);
     }
 }
